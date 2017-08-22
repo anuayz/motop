@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: motop
-Version: 4.2.1
+Version: 5.0.0
 Summary: "Top" clone for MongoDB.
 Home-page: https://github.com/tart/motop
 Author: Emre Hasegeli
@@ -172,7 +172,7 @@ Description: Motop
         
         * Support installation with `pip`
         
-        Motop 4.2.1
+        Motop 5.0.0
         
         * Better error handling for Mongo 3.2+ responses (including truncated non-objects ending with ...)
 Keywords: mongo realtime monitoring examine explain kill operations
