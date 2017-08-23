@@ -1,4 +1,3 @@
-README.rst
 motop
 setup.py
 libmotop/__init__.py

@@ -246,10 +246,11 @@ class Query:
 class OperationBlock(Block):
     columnHeaders = ('Server', 'Opid', 'Client', 'Type', 'Sec', 'Namespace', 'Query', 'Locks')
 
-    def __init__(self, servers, replicationOperationServers):
+    def __init__(self, servers, replicationOperationServers, params = {}):
         Block.__init__(self, self.columnHeaders)
         self.__servers = servers
         self.__replicationOperationServers = replicationOperationServers
+        self.__params = params
 
     def reset(self):
         self.__lines = []
@@ -258,6 +259,8 @@ class OperationBlock(Block):
             if server.connected():
                 hideReplicationOperations = server not in self.__replicationOperationServers
                 for op in server.currentOperations(hideReplicationOperations):
+                    if op.get('ns').split('.', 1)[0] in self.__params['ignoreDbs'] :
+                        continue
                     cells = []
                     cells.append(server)
                     cells.append(str(op.get('opid')))
@@ -350,15 +353,16 @@ class OperationBlock(Block):
             server.killOperation(line[1])
 
 class QueryScreen:
-    def __init__(self, console, chosenServers, autoKillSeconds=None):
+    def __init__(self, console, chosenServers, autoKillSeconds=None, params = {}):
         self.__console = console
         self.__servers = set(server for servers in chosenServers.values() for server in servers)
+        self.__params = params
 
         self.__blocks = []
         self.__blocks.append(StatusBlock(chosenServers['status']))
         self.__blocks.append(ReplicationInfoBlock(chosenServers['replicationInfo']))
         self.__blocks.append(ReplicaSetMemberBlock(chosenServers['replicaSet']))
-        self.__operationBlock = OperationBlock(chosenServers['operations'], chosenServers['replicationOperations'])
+        self.__operationBlock = OperationBlock(chosenServers['operations'], chosenServers['replicationOperations'], params = self.__params)
         self.__blocks.append(self.__operationBlock)
 
         self.__autoKillSeconds = autoKillSeconds
