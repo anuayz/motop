@@ -288,14 +288,15 @@ class OperationBlock(Block):
                     queryStr = "[none]"
                     if 'query' in op:
                         try:
-                            if ( type(op['query']) == types.UnicodeType ) or ( type(op['query']) == types.StringType ) :
-                                queryStr = ColorStr(op['query'], ColorStr.BRIGHT_YELLOW)
-                            elif '$msg' in op['query']:
+                            if '$msg' in op['query']:
                                 queryStr = op['query']['$msg']
-                            elif '...' in op['query']:
-                                queryStr = ColorStr(op['query'], ColorStr.BRIGHT_RED)
-                            else:
-                                queryStr = Query(**op['query'])
+                            else :
+                                if '...' in op['query']:
+                                    queryStr = ColorStr(op['query'], ColorStr.BRIGHT_RED)
+                                elif ( type(op['query']) == types.UnicodeType ) or ( type(op['query']) == types.StringType ) :
+                                    queryStr = ColorStr(op['query'], ColorStr.BRIGHT_YELLOW)
+                                else:
+                                    queryStr = Query(**op['query'])
                         except:
                             print("Unexpected error:", sys.exc_info()[0])
                             print("Op:")
