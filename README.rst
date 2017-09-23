@@ -14,7 +14,7 @@ Install with easy_install::
 
 Install with pip::
 
-    pip install git+https://github.com/tart/motop.git
+    pip install git+https://github.com/somsak/motop.git
 
 Download and install::
 
@@ -134,6 +134,13 @@ Open Source Initiative [1].
 
 Changelog
 ---------
+
+Motop 5.0
+
+* Take over the repository from tart.
+* Fix compatibility with MongoDB3.4
+* Add Ignore DBs options
+* Fix replication operations detection code
 
 Motop 3.0
 

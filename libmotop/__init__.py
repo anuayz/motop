@@ -2,7 +2,11 @@
 ##
 # motop - Unix "top" Clone for MongoDB
 #
-# Copyright (c) 2012, Tart İnternet Teknolojileri Ticaret AŞ
+# Copyright (c)
+#  2012, Tart İnternet Teknolojileri Ticaret AŞ
+#  2017, Somsak Sriprayoonsakul, Innovative Extremist (INOX)
+#
+# Modified 2017, Paul Ridgway
 #
 # Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby
 # granted, provided that the above copyright notice and this permission notice appear in all copies.
@@ -15,5 +19,5 @@
 ##
 
 __name__ = 'motop'
-__version__ = 4.2
+__version__ = 5.0.0
 __doc__ = '"Top" clone for MongoDB.'

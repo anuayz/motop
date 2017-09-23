@@ -17,16 +17,17 @@
 
 """Imports for Python 3 compatibility"""
 from __future__ import print_function
+import time
 
 """Library imports"""
 import types
-import sys
 import json
 from pprint import pprint
 from bson import json_util
+import sys
 
 """Class imports"""
-from .console import Block
+from .console import Block, ColorStr
 
 class StatusBlock(Block):
     columnHeaders = ('Server', 'QPS', 'Active', 'Queue', 'Flush', 'Connection', 'Network I/O', 'Memory', 'Page Faults',)
@@ -201,7 +202,10 @@ class Query:
             self.__parts['spec'] = parts
 
     def __str__(self):
-        return json.dumps(self.__parts, default=json_util.default)
+        try:
+            return json.dumps(self.__parts, default=json_util.default)
+        except UnicodeDecodeError:
+            return str(self.__parts)
 
     def print(self):
         """Print formatted query parts."""
@@ -240,12 +244,13 @@ class Query:
         return True
 
 class OperationBlock(Block):
-    columnHeaders = ('Server', 'Opid', 'Client', 'Type', 'Sec', 'Locks', 'Namespace', 'Query')
+    columnHeaders = ('Server', 'Opid', 'Client', 'Type', 'Sec', 'Namespace', 'Query', 'Locks')
 
-    def __init__(self, servers, replicationOperationServers):
+    def __init__(self, servers, replicationOperationServers, params = {}):
         Block.__init__(self, self.columnHeaders)
         self.__servers = servers
         self.__replicationOperationServers = replicationOperationServers
+        self.__params = params
 
     def reset(self):
         self.__lines = []
@@ -254,12 +259,48 @@ class OperationBlock(Block):
             if server.connected():
                 hideReplicationOperations = server not in self.__replicationOperationServers
                 for op in server.currentOperations(hideReplicationOperations):
+                    if op.get('ns').split('.', 1)[0] in self.__params['ignoreDbs'] :
+                        continue
                     cells = []
                     cells.append(server)
                     cells.append(str(op.get('opid')))
                     cells.append(op.get('client'))
-                    cells.append(op.get('op'))
+                    typeStr = op.get('op')
+                    if typeStr == "query":
+                        typeStr = ColorStr(typeStr, color = ColorStr.BRIGHT_GREEN)
+                    elif typeStr == "getmore":
+                        typeStr = ColorStr(typeStr, color = ColorStr.BRIGHT_BLUE)
+                    elif typeStr == "command":
+                        typeStr = ColorStr(typeStr, color = ColorStr.BRIGHT_CYAN)
+                    elif typeStr == "insert":
+                        typeStr = ColorStr(typeStr, color = ColorStr.BRIGHT_YELLOW)
+                    elif typeStr == "remove":
+                        typeStr = ColorStr(typeStr, color = ColorStr.BRIGHT_RED)
+                    elif typeStr == "none":
+                        typeStr = ColorStr(typeStr, color = ColorStr.BRIGHT_PURPLE)
+                    cells.append(typeStr)
                     cells.append(op.get('secs_running'))
+                    cells.append(op.get('ns'))
+
+                    queryStr = "[none]"
+                    if 'query' in op:
+                        try:
+                            if ( type(op['query']) == types.UnicodeType ) or ( type(op['query']) == types.StringType ) :
+                                queryStr = ColorStr(Query(query = op['query']), ColorStr.BRIGHT_YELLOW)
+                            if '$msg' in op['query']:
+                                queryStr = op['query']['$msg']
+                            elif '...' in op['query']:
+                                queryStr = ColorStr(op['query'], ColorStr.BRIGHT_RED)
+                            else:
+                                queryStr = Query(**op['query'])
+                        except:
+                            print("Unexpected error:", sys.exc_info()[0])
+                            print("Op:")
+                            print(op)
+                            print("Query:")
+                            print(op['query'])
+                            raise
+                    cells.append(queryStr)
 
                     locks = []
                     if op.get('waitingForLock'):
@@ -275,15 +316,6 @@ class OperationBlock(Block):
                         locks.append(op['lockType'])
 
                     cells.append(locks)
-                    cells.append(op.get('ns'))
-
-                    if 'query' in op:
-                        if ( type(op['query']) == types.UnicodeType ) or ( type(op['query']) == types.StringType ) :
-                            cells.append(Query(query = op['query']))
-                        elif '$msg' in op['query']:
-                            cells.append(op['query']['$msg'])
-                        else:
-                            cells.append(Query(**op['query']))
 
                     self.__lines.append(cells)
 
@@ -323,15 +355,16 @@ class OperationBlock(Block):
             server.killOperation(line[1])
 
 class QueryScreen:
-    def __init__(self, console, chosenServers, autoKillSeconds=None):
+    def __init__(self, console, chosenServers, autoKillSeconds=None, params = {}):
         self.__console = console
         self.__servers = set(server for servers in chosenServers.values() for server in servers)
+        self.__params = params
 
         self.__blocks = []
         self.__blocks.append(StatusBlock(chosenServers['status']))
         self.__blocks.append(ReplicationInfoBlock(chosenServers['replicationInfo']))
         self.__blocks.append(ReplicaSetMemberBlock(chosenServers['replicaSet']))
-        self.__operationBlock = OperationBlock(chosenServers['operations'], chosenServers['replicationOperations'])
+        self.__operationBlock = OperationBlock(chosenServers['operations'], chosenServers['replicationOperations'], params = self.__params)
         self.__blocks.append(self.__operationBlock)
 
         self.__autoKillSeconds = autoKillSeconds
