@@ -1,5 +1,0 @@
-#!/usr/bin/python
-
-from libmotop import motop
-motop.run()
-
