@@ -250,7 +250,10 @@ class OperationBlock(Block):
         Block.__init__(self, self.columnHeaders)
         self.__servers = servers
         self.__replicationOperationServers = replicationOperationServers
-        self.__params = params
+        if not params :
+            self.__params = { 'ignoreDbs': '' }
+        else :
+            self.__params = params
 
     def reset(self):
         self.__lines = []
