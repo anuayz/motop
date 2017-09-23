@@ -290,7 +290,7 @@ class OperationBlock(Block):
                         try:
                             if ( type(op['query']) == types.UnicodeType ) or ( type(op['query']) == types.StringType ) :
                                 queryStr = ColorStr(Query(query = op['query']), ColorStr.BRIGHT_YELLOW)
-                            if '$msg' in op['query']:
+                            elif '$msg' in op['query']:
                                 queryStr = op['query']['$msg']
                             elif '...' in op['query']:
                                 queryStr = ColorStr(op['query'], ColorStr.BRIGHT_RED)
