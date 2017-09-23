@@ -114,7 +114,7 @@ class Server:
                     if op.get('op') == 'getmore' and op.get('ns').startswith('local.oplog.'):
                         """Condition to find replication operation on the master."""
                         continue
-                    if op.get('op') and op.get('ns') in ('', 'local.sources'):
+                    if op.get('op') and op.get('ns') in ('', 'local.sources', 'local.replset.minvalid', 'local.oplog.rs'):
                         """Condition to find replication operation on the slave."""
                         continue
                 yield Result(op)

@@ -20,7 +20,9 @@ from __future__ import print_function
 
 """Library imports"""
 import types
+import sys
 import json
+from pprint import pprint
 from bson import json_util
 
 """Class imports"""
@@ -276,7 +278,9 @@ class OperationBlock(Block):
                     cells.append(op.get('ns'))
 
                     if 'query' in op:
-                        if '$msg' in op['query']:
+                        if ( type(op['query']) == types.UnicodeType ) or ( type(op['query']) == types.StringType ) :
+                            cells.append(Query(query = op['query']))
+                        elif '$msg' in op['query']:
                             cells.append(op['query']['$msg'])
                         else:
                             cells.append(Query(**op['query']))
