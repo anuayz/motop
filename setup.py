@@ -13,11 +13,11 @@ setup(name=libmotop.__name__,
         scripts=('motop',),
         install_requires=('pymongo', 'argparse'),
         author='Emre Hasegeli',
-        author_email='hasegeli@tart.com.tr',
+        author_email='somsaks@gmail.com',
         license='ICS',
-        url='https://github.com/tart/motop',
+        url='https://github.com/somsak/motop',
         platforms='POSIX',
         description=libmotop.__doc__,
         keywords='mongo realtime monitoring examine explain kill operations',
-        long_description=readme())
+        long_description='Top-clone for MongoDB operations')
 
