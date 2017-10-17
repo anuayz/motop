@@ -251,7 +251,7 @@ class OperationBlock(Block):
         self.__servers = servers
         self.__replicationOperationServers = replicationOperationServers
         if not params :
-            self.__params = { 'ignoreDbs': '' }
+            self.__params = { 'ignoreDbs': '', 'minSecsRunning': -1 }
         else :
             self.__params = params
 
@@ -282,7 +282,17 @@ class OperationBlock(Block):
                     elif typeStr == "none":
                         typeStr = ColorStr(typeStr, color = ColorStr.BRIGHT_PURPLE)
                     cells.append(typeStr)
-                    cells.append(op.get('secs_running'))
+                    try :
+                        if self.__params['minSecsRunning'] == -1 :
+                            cells.append(op.get('secs_running'))
+                        else :
+                            secs_running = int(op.get('secs_running'))
+                            if secs_running >= self.__params['minSecsRunning'] :
+                                cells.append(op.get('secs_running'))
+                            else :
+                                continue
+                    except (KeyError,AttributeError,TypeError), e :
+                        cells.append(op.get('secs_running'))
                     cells.append(op.get('ns'))
 
                     queryStr = "[none]"

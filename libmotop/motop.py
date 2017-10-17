@@ -92,6 +92,8 @@ def run():
     params = {}
     if config.has_option('DEFAULT', 'ignoreDbs') :
         params['ignoreDbs'] = config.get('DEFAULT', 'ignoreDbs').split(',')
+    if config.has_option('DEFAULT', 'minSecsRunning') :
+        params['minSecsRunning'] = int(config.get('DEFAULT', 'minSecsRunning'))
 
     with Console() as console:
         queryScreen = QueryScreen(console, chosenServers, autoKillSeconds=arguments.autoKillSeconds, params = params)
