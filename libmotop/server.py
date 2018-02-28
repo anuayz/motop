@@ -7,7 +7,7 @@
 #
 # Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby
 # granted, provided that the above copyright notice and this permission notice appear in all copies.
-# 
+#
 # The software is provided "as is" and the author disclaims all warranties with regard to the software including all
 # implied warranties of merchantability and fitness. In no event shall the author be liable for any special, direct,
 # indirect, or consequential damages or any damages whatsoever resulting from loss of use, data or profits, whether
@@ -20,6 +20,7 @@ import os
 import sys
 import time
 import pymongo
+from bson.errors import InvalidBSON
 
 class Server:
     def __init__(self, name, address, **kwargs) :
@@ -107,7 +108,10 @@ class Server:
 
     def currentOperations(self, hideReplicationOperations=False):
         """Execute currentOp operation on the server. Filter and yield returning operations."""
-        operations = self.__execute(self.__connection[self.__namespace].current_op)
+        try :
+            operations = self.__execute(self.__connection[self.__namespace].current_op)
+        except InvalidBSON :
+            operations = []
         if operations:
             for op in operations['inprog']:
                 if hideReplicationOperations:
@@ -156,4 +160,3 @@ class Result(dict):
         if value and otherValue:
             return value - otherValue
         return 0
-
