@@ -244,7 +244,7 @@ class Query:
         return True
 
 class OperationBlock(Block):
-    columnHeaders = ('Server', 'Opid', 'Client', 'Type', 'Sec', 'Namespace', 'Query', 'Locks')
+    columnHeaders = ('Server', 'Opid', 'Client', 'Type', 'Sec', 'Namespace', 'Locks', 'Query')
 
     def __init__(self, servers, replicationOperationServers, params = {}):
         Block.__init__(self, self.columnHeaders)
@@ -255,6 +255,28 @@ class OperationBlock(Block):
         else :
             self.__params = params
 
+    def parseCommand(self, command, op) :
+        '''Parse currentOp command field, for MongoDB3.6 or above'''
+        retval = '[none]'
+        if '$truncated' in command :
+            retval = '[truncated]'
+#            return retval
+            filter_start = command["$truncated"].find("filter")
+            if filter_start >= 0 :
+                filter_real_start = command["$truncated"].find("{", filter_start)
+                if filter_real_start >= 0 :
+                    retval = command["$truncated"][filter_real_start: (filter_real_start + 50)]
+                    return retval.encode('utf8', 'ignore')
+        else :
+            target = command
+
+        target = command
+
+        if 'filter' in target :
+            retval = target['filter']
+            
+        return retval
+
     def reset(self):
         self.__lines = []
 
@@ -262,6 +284,7 @@ class OperationBlock(Block):
             if server.connected():
                 hideReplicationOperations = server not in self.__replicationOperationServers
                 for op in server.currentOperations(hideReplicationOperations):
+                    #pprint(op, stream = sys.stderr)
                     if op.get('ns').split('.', 1)[0] in self.__params['ignoreDbs'] :
                         continue
                     cells = []
@@ -275,9 +298,11 @@ class OperationBlock(Block):
                         typeStr = ColorStr(typeStr, color = ColorStr.BRIGHT_BLUE)
                     elif typeStr == "command":
                         typeStr = ColorStr(typeStr, color = ColorStr.BRIGHT_CYAN)
-                    elif typeStr == "insert":
+                    elif typeStr == "insert" or typeStr == "update" :
                         typeStr = ColorStr(typeStr, color = ColorStr.BRIGHT_YELLOW)
                     elif typeStr == "remove":
+                        typeStr = ColorStr(typeStr, color = ColorStr.BRIGHT_RED)
+                    elif typeStr == "killcursors":
                         typeStr = ColorStr(typeStr, color = ColorStr.BRIGHT_RED)
                     elif typeStr == "none":
                         typeStr = ColorStr(typeStr, color = ColorStr.BRIGHT_PURPLE)
@@ -293,7 +318,33 @@ class OperationBlock(Block):
                                 continue
                     except (KeyError,AttributeError,TypeError), e :
                         cells.append(op.get('secs_running'))
-                    cells.append(op.get('ns'))
+                    cells.append(op.get('ns')[0:18])
+
+                    # locks
+                    locks = []
+                    if op.get('waitingForLock'):
+                        locks.append('waiting')
+                    if 'locks' in op:
+                        if '^' in op['locks']:
+                            """Do not show others if global lock exist."""
+                            locks.append(op['locks']['^'])
+                        else:
+                            for ns, lock in op['locks'].items():
+                                if ns == "Global" :
+                                    tmp = "G"
+                                elif ns == "Database" :
+                                    tmp = "DB"
+                                elif ns == "Collection" :
+                                    tmp = "Col"
+                                elif ns == "Metadata" :
+                                    tmp = "Meta"
+                                else :
+                                    tmp = ns[0:2]
+                                locks.append(lock + ' on ' + tmp)
+                    elif 'lockType' in op:
+                        locks.append(op['lockType'])
+
+                    cells.append(locks)
 
                     queryStr = "[none]"
                     if 'query' in op:
@@ -314,22 +365,14 @@ class OperationBlock(Block):
                             print("Query:")
                             print(op['query'])
                             raise
+                    # below are for MongoDB 3.6 or above
+                    elif 'originatingCommand' in op :
+                        # this is the getmore operation
+                        queryStr = self.parseCommand(op['originatingCommand'], typeStr)
+                    elif 'command' in op :
+                        # this is the normal operation
+                        queryStr = self.parseCommand(op['command'], typeStr)
                     cells.append(queryStr)
-
-                    locks = []
-                    if op.get('waitingForLock'):
-                        locks.append('waiting')
-                    if 'locks' in op:
-                        if '^' in op['locks']:
-                            """Do not show others if global lock exist."""
-                            locks.append(op['locks']['^'])
-                        else:
-                            for ns, lock in op['locks'].items():
-                                locks.append(lock + ' on ' + ns[1:])
-                    elif 'lockType' in op:
-                        locks.append(op['lockType'])
-
-                    cells.append(locks)
 
                     self.__lines.append(cells)
 
