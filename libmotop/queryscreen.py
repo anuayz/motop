@@ -82,7 +82,12 @@ class StatusBlock(Block):
 
                 memory = [v * 10**6 for v in status.deepget('mem', ('resident', 'mapped')) if v is not None]
                 sum_cells[7][0] += memory[0]
-                sum_cells[7][1] += memory[1]
+                try :
+                    sum_cells[7][1] += memory[1]
+                except IndexError:
+                    #possibly because no mapped memory (no mmapv1 db)
+                    virtual = 10**6 * status.deepget('mem', ('virtual'))
+                    sum_cells[7][1] += virtual
                 cells.append(memory)
 
                 page_faults = status.deepgetDiff(oldStatus, 'extra_info', 'page_faults') / sec
